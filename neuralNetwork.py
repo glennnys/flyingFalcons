@@ -53,7 +53,7 @@ def nnCostFunction(nn_params,
 
     temp = np.zeros([y.shape[0], num_labels])
     for i in range(m):
-        temp[i, y[i]] = 1
+        temp[i, int(y[i]-1)] = 1
 
     # TODO rewrite code to use variable amount of layers
     a = []
@@ -94,14 +94,18 @@ def nnCostFunction(nn_params,
 # I think this works
 def optimizeNN(maxIter, input_layer_size, hidden_layer_size,
                hidden_layer_count,
-               num_labels, X, y, lambda_):
+               num_labels, X, y, lambda_, pathToStoreThetas):
+    print("optimizing thetas")
     options = {'maxiter': maxIter}
+    if not os.path.isdir(f"{pathToStoreThetas}\\optimized thetas"):
+        os.mkdir(f"{pathToStoreThetas}\\optimized thetas")
 
     costFunction = lambda p: nnCostFunction(p, input_layer_size,
                                             hidden_layer_size,
                                             hidden_layer_count,
                                             num_labels, X, y, lambda_)
 
+    start_time = time.time()
     initialThetas = randInitAllWeights(input_layer_size, hidden_layer_size, hidden_layer_count, num_labels)
     initial_nn_params = np.concatenate([theta.ravel() for theta in initialThetas], axis=0)
 
@@ -110,20 +114,26 @@ def optimizeNN(maxIter, input_layer_size, hidden_layer_size,
                             jac=True,
                             method='TNC',
                             options=options)
+    print(f"it took {time.time()-start_time} seconds to optimize neural network")
     nn_params = res.x
-    return nnparamsToThetas(nn_params,
+    thetas = nnparamsToThetas(nn_params,
                             input_layer_size,
                             hidden_layer_size, hidden_layer_count,
                             num_labels)
 
+    np.savetxt(f'{pathToStoreThetas}\\optimized thetas\\trained thetas.csv', nn_params, delimiter=',')
+    print("thetas optimized")
+    return thetas
 
-def importFiles(current_dir, path, input_size, output_size):
+
+def importFiles(pathToDataset, pathToStoreData, input_size, output_size):
+    path = pathToDataset
     inputSize = input_size
     outputSize = output_size
     start_time = time.time()
     os.chdir(path)
-    if not os.path.isdir(f'{current_dir}\\converted dataset'):
-        os.mkdir(f'{current_dir}\\converted dataset')
+    if not os.path.isdir(f"{pathToStoreData}\\converted dataset"):
+        os.mkdir(f"{pathToStoreData}\\converted dataset")
     # iterate through all file
     i = 0
     filename, width, height, planeType, xmin, ymin, xmax, ymax = 0, 0, 0, 0, 0, 0, 0, 0
@@ -170,34 +180,32 @@ def importFiles(current_dir, path, input_size, output_size):
                 if i >= fileCount * 0.6 and training == 1:
                     training = 0
                     validating = 1
-                    np.savetxt(f'{current_dir}\\converted dataset\\training set.csv', X, delimiter=',')
+                    np.savetxt(f'{pathToStoreData}\\converted dataset\\training set.csv', X, delimiter=',')
+                    X = []
+                    y = []
+                    print("created training set")
                 if i >= fileCount * 0.8 and validating == 1:
                     validating = 0
                     testing = 1
-                    np.savetxt(f'{current_dir}\\converted dataset\\validating set.csv', X, delimiter=',')
-                if i == fileCount:
-                    np.savetxt(f'{current_dir}\\converted dataset\\test set.csv', X, delimiter=',')
-
+                    np.savetxt(f'{pathToStoreData}\\converted dataset\\validating set.csv', X, delimiter=',')
+                    X = []
+                    y = []
+                    print("created validating set")
         i += 1
-        print(f"processed {i} files, {fileCount - i} to go")
-    end_time = time.time()
-    train = np.loadtxt(f'{current_dir}\\converted dataset\\training set.csv', delimiter=',')
-    validate = np.loadtxt(f'{current_dir}\\converted dataset\\validating set.csv', delimiter=',')
-    test = np.loadtxt(f'{current_dir}\\converted dataset\\test set.csv', delimiter=',')
-    print(train)
-    print()
-    print(validate)
-    print()
-    print(test)
-    print(f"it took {end_time - start_time} seconds to import {fileCount} data samples")
+        fraction_left = (fileCount - i)/i
+        time_up_to_now = time.time() - start_time
+        estimated_time_left = time_up_to_now*fraction_left
+        print(f"Processed {i} files, {fileCount - i} left. Estimated time remaining: {estimated_time_left} seconds")
+    np.savetxt(f'{pathToStoreData}\\converted dataset\\test set.csv', X, delimiter=',')
+    X = []
+    y = []
+    print("created test set")
+    print(f"it took {time.time() - start_time} seconds to import {fileCount} data samples")
 
 
 # ============basic functions==================
 # definitely works
 def sigmoid(z):
-    """
-    Computes the sigmoid of z.
-    """
     return 1.0 / (1.0 + np.exp(-z))
 
 

@@ -1,46 +1,24 @@
-import os
-
 import neuralNetwork
 import numpy as np
-import csv
 
-def readFile(path):
-    os.chdir(path)
-    rows = []
-    for file in os.listdir(path):
-        if file.endswith(".csv"):
-            csvFile = open(file)
-            csvreader = csv.reader(csvFile)
-            header = next(csvreader)
-    for row in csvreader:
-        if len(row) > 0:
-            X,y = row
-            print(len(X), y)
-        rows.append(row)
-
-inputSize = (50, 50)
+inputSize = (200, 200)
 outputSize = 40
-cwd = os.getcwd()
-neuralNetwork.importFiles(cwd, "dataset", inputSize, outputSize)
-#readFile(cwd)
+pathToDataset = "C:\\Users\\glenn\\OneDrive - KU Leuven\\Master Industrieel 1\\sem 1\\Machine Learning\\lab\\project\\dataset"
+pathToStoreData = "C:\\Users\\glenn\\Documents"
 
-# testing neural network
-X = np.ones((23, 400))
-y = np.asarray([2, 3, 1, 3, 5, 7, 9, 6, 3, 2, 5, 9, 0, 8, 6, 3, 5, 8, 4, 4, 6, 7, 8])
+# neuralNetwork.importFiles(pathToDataset, pathToStoreData, inputSize, outputSize)
+
+X = np.loadtxt(f'{pathToStoreData}\\converted dataset\\training set.csv', delimiter=',')
+y = X[:, -1]
+X = X[:, :-1]
 
 input_layer_size = X.shape[1]
-hidden_layer_size = 25
-hidden_layer_count = 10
-num_labels = 10
+hidden_layer_size = 100
+hidden_layer_count = 2
+num_labels = 40
 thetas = neuralNetwork.randInitAllWeights(input_layer_size, hidden_layer_size, hidden_layer_count, num_labels)
 initial_nn_params = np.concatenate([theta.ravel() for theta in thetas], axis=0)
 
-initial_cost = neuralNetwork.nnCostFunction(initial_nn_params,
-                                            input_layer_size,
-                                            hidden_layer_size, hidden_layer_count,
-                                            num_labels,
-                                            X, y)
-
 newTheta = neuralNetwork.optimizeNN(200, input_layer_size, hidden_layer_size,
                                     hidden_layer_count,
-                                    num_labels, X, y, 1)
+                                    num_labels, X, y, 1, pathToStoreData)
