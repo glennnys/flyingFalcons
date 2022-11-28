@@ -7,36 +7,24 @@ import time
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-
 # ============neural network functions==================
-def validateFromValues(optimizedThetas, X, y):
+def validate(optimizedThetas, X, y):
     print("validating")
     p = predict(optimizedThetas, X)
     correctCount = 0
     for i in range(len(p)):
+        print(f"p: {p[i]}, y:{y[i]}")
         if p[i] == y[i]:
             correctCount += 1
 
     return correctCount / len(p)
 
 
-def validateFromFile(pathToThetas, pathToX, input_layer_size, hidden_layer_size, hidden_layer_count, num_labels):
-    print("loading X values")
-    X = np.loadtxt(pathToX, delimiter=',')
-    print("loading thetas")
-    optimizedThetas = nnparamsToThetas(np.loadtxt(pathToThetas, delimiter=','), input_layer_size, hidden_layer_size,
-                                       hidden_layer_count, num_labels)
-    print(optimizedThetas[0].shape)
-    y = X[:, -1]
-    X = X[:, :-1]
-
-    return validateFromValues(optimizedThetas, X, y)
-
-
-# might work
+# probably doesn't work
 def predict(thetas, X):
     # Make sure the input has two dimensions
     print("predicting output")
+    start_time = time.time()
     if X.ndim == 1:
         X = X[None]  # promote to 2-dimensions
 
@@ -46,20 +34,17 @@ def predict(thetas, X):
     # You need to return the following variables correctly
     p = np.zeros(X.shape[0])
     for i in range(m):
-        a1 = X[i]
-        a1 = np.insert(a1, 0, 1)
-        aPrev = a1
+        a = [X[i]]
         # TODO test if this part works as intended
-        print(len(thetas))
         for j in range(len(thetas)):
-            aNext = sigmoid(np.dot(thetas[j], aPrev))
-            aNext = np.insert(aNext, 0, 1)
-            aPrev = aNext
-        p[i] = np.argmax(aPrev)
+            a[j] = np.insert(a[j], 0, 1)
+            a.append(sigmoid(np.dot(thetas[j], a[j])))
+        p[i] = np.argmax(a[-1])
+    print(f'time to predict outcome: {time.time() - start_time} seconds')
     return p
 
 
-# needs to be written in a way that it takes any amount of thetas (btw, all hidden layers are the same size in our case)
+# works probably
 def nnCostFunction(nn_params,
                    input_layer_size,
                    hidden_layer_size, hidden_layer_count,
@@ -83,13 +68,12 @@ def nnCostFunction(nn_params,
     a = []
     z = []
     a.append(np.transpose(X))
-    a[0] = np.concatenate([np.ones((1, a[0].shape[1])), a[0]], axis=0)
     for i in range(len(thetas)):
+        a[i] = np.concatenate([np.ones((1, a[i].shape[1])), a[i]], axis=0)
         z.append(np.dot(thetas[i], a[i]))
         a.append(sigmoid(z[i]))
-        a[i + 1] = np.concatenate([np.ones((1, a[i + 1].shape[1])), a[i + 1]], axis=0)
 
-    h = np.transpose(sigmoid(z[-1]))
+    h = np.transpose(a[-1])
 
     regTerm = 0
     for theta in thetas:
@@ -145,7 +129,6 @@ def optimizeNN(maxIter, input_layer_size, hidden_layer_size,
                               num_labels)
 
     np.savetxt(f'{pathToStoreThetas}\\optimized thetas\\trained thetas.csv', nn_params, delimiter=',')
-    print("thetas optimized")
     return thetas
 
 
@@ -224,7 +207,8 @@ def importFiles(pathToDataset, pathToStoreData, input_size, output_size):
 # ============basic functions==================
 # definitely works(overflows?)
 def sigmoid(z):
-    return 1.0 / (1.0 + np.exp(-z))
+    gz = 1.0 / (1.0 + np.exp(-z))
+    return gz
 
 
 # definitely works
@@ -282,3 +266,5 @@ def nnparamsToThetas(nn_params,
                                                 + ((hidden_layer_size ** 2 + hidden_layer_size) * layer))],
                                      (hidden_layer_size, (hidden_layer_size + 1))))
     return thetas
+
+#%%
