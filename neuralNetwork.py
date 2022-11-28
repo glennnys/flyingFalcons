@@ -7,20 +7,9 @@ import time
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+
 # ============neural network functions==================
-def validate(optimizedThetas, X, y):
-    print("validating")
-    p = predict(optimizedThetas, X)
-    correctCount = 0
-    for i in range(len(p)):
-        print(f"p: {p[i]}, y:{y[i]}")
-        if p[i] == y[i]:
-            correctCount += 1
-
-    return correctCount / len(p)
-
-
-# probably doesn't work
+# probably works
 def predict(thetas, X):
     # Make sure the input has two dimensions
     print("predicting output")
@@ -35,11 +24,11 @@ def predict(thetas, X):
     p = np.zeros(X.shape[0])
     for i in range(m):
         a = [X[i]]
-        # TODO test if this part works as intended
         for j in range(len(thetas)):
             a[j] = np.insert(a[j], 0, 1)
             a.append(sigmoid(np.dot(thetas[j], a[j])))
         p[i] = np.argmax(a[-1])
+    print(p)
     print(f'time to predict outcome: {time.time() - start_time} seconds')
     return p
 
@@ -63,7 +52,7 @@ def nnCostFunction(nn_params,
 
     temp = np.zeros([y.shape[0], num_labels])
     for i in range(m):
-        temp[i, int(y[i] - 1)] = 1
+        temp[i, int(y[i])] = 1
 
     a = []
     z = []
@@ -167,7 +156,7 @@ def importFiles(pathToDataset, pathToStoreData, input_size, output_size):
             xmax = int(xmax)
             ymax = int(ymax)
             if planeType not in planeDict:
-                planeDict[planeType] = len(planeDict) + 1
+                planeDict[planeType] = len(planeDict)
             y = planeDict[planeType]
 
         if file.endswith(".jpg"):
@@ -266,5 +255,3 @@ def nnparamsToThetas(nn_params,
                                                 + ((hidden_layer_size ** 2 + hidden_layer_size) * layer))],
                                      (hidden_layer_size, (hidden_layer_size + 1))))
     return thetas
-
-#%%
