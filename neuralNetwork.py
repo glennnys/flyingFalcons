@@ -9,9 +9,34 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 # ============neural network functions==================
+def validateFromValues(optimizedThetas, X, y):
+    print("validating")
+    p = predict(optimizedThetas, X)
+    correctCount = 0
+    for i in range(len(p)):
+        if p[i] == y[i]:
+            correctCount += 1
+
+    return correctCount / len(p)
+
+
+def validateFromFile(pathToThetas, pathToX, input_layer_size, hidden_layer_size, hidden_layer_count, num_labels):
+    print("loading X values")
+    X = np.loadtxt(pathToX, delimiter=',')
+    print("loading thetas")
+    optimizedThetas = nnparamsToThetas(np.loadtxt(pathToThetas, delimiter=','), input_layer_size, hidden_layer_size,
+                                       hidden_layer_count, num_labels)
+    print(optimizedThetas[0].shape)
+    y = X[:, -1]
+    X = X[:, :-1]
+
+    return validateFromValues(optimizedThetas, X, y)
+
+
 # might work
 def predict(thetas, X):
     # Make sure the input has two dimensions
+    print("predicting output")
     if X.ndim == 1:
         X = X[None]  # promote to 2-dimensions
 
@@ -25,6 +50,7 @@ def predict(thetas, X):
         a1 = np.insert(a1, 0, 1)
         aPrev = a1
         # TODO test if this part works as intended
+        print(len(thetas))
         for j in range(len(thetas)):
             aNext = sigmoid(np.dot(thetas[j], aPrev))
             aNext = np.insert(aNext, 0, 1)
@@ -49,13 +75,11 @@ def nnCostFunction(nn_params,
 
     # You need to return the following variables correctly
     J = 0
-    # TODO change all thetas to only one theta array
 
     temp = np.zeros([y.shape[0], num_labels])
     for i in range(m):
-        temp[i, int(y[i]-1)] = 1
+        temp[i, int(y[i] - 1)] = 1
 
-    # TODO rewrite code to use variable amount of layers
     a = []
     z = []
     a.append(np.transpose(X))
@@ -108,18 +132,17 @@ def optimizeNN(maxIter, input_layer_size, hidden_layer_size,
     start_time = time.time()
     initialThetas = randInitAllWeights(input_layer_size, hidden_layer_size, hidden_layer_count, num_labels)
     initial_nn_params = np.concatenate([theta.ravel() for theta in initialThetas], axis=0)
-
     res = optimize.minimize(costFunction,
                             initial_nn_params,
                             jac=True,
                             method='TNC',
                             options=options)
-    print(f"it took {time.time()-start_time} seconds to optimize neural network")
+    print(f"it took {time.time() - start_time} seconds to optimize neural network")
     nn_params = res.x
     thetas = nnparamsToThetas(nn_params,
-                            input_layer_size,
-                            hidden_layer_size, hidden_layer_count,
-                            num_labels)
+                              input_layer_size,
+                              hidden_layer_size, hidden_layer_count,
+                              num_labels)
 
     np.savetxt(f'{pathToStoreThetas}\\optimized thetas\\trained thetas.csv', nn_params, delimiter=',')
     print("thetas optimized")
@@ -192,19 +215,14 @@ def importFiles(pathToDataset, pathToStoreData, input_size, output_size):
                     y = []
                     print("created validating set")
         i += 1
-        fraction_left = (fileCount - i)/i
-        time_up_to_now = time.time() - start_time
-        estimated_time_left = time_up_to_now*fraction_left
-        print(f"Processed {i} files, {fileCount - i} left. Estimated time remaining: {estimated_time_left} seconds")
+
     np.savetxt(f'{pathToStoreData}\\converted dataset\\test set.csv', X, delimiter=',')
-    X = []
-    y = []
     print("created test set")
     print(f"it took {time.time() - start_time} seconds to import {fileCount} data samples")
 
 
 # ============basic functions==================
-# definitely works
+# definitely works(overflows?)
 def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
 
@@ -221,24 +239,24 @@ def randInitializeWeights(L_in, L_out, epsilon_init=0.12):
     return np.random.rand(L_out, 1 + L_in) * 2 * epsilon_init - epsilon_init
 
 
-# I think it works
+# this works
 def randInitAllWeights(input_layer_size, hidden_layer_size,
                        hidden_layer_count,
                        num_labels):
-    # TODO test if this works
     thetas = []
     for layer in range(hidden_layer_count + 1):
         if layer == 0:
-            thetas.append(randInitializeWeights(input_layer_size, hidden_layer_size))
+            newTheta = randInitializeWeights(input_layer_size, hidden_layer_size)
         elif layer == hidden_layer_count:
-            thetas.append(randInitializeWeights(hidden_layer_size, num_labels))
+            newTheta = randInitializeWeights(hidden_layer_size, num_labels)
         else:
-            thetas.append(randInitializeWeights(hidden_layer_size, hidden_layer_size))
+            newTheta = randInitializeWeights(hidden_layer_size, hidden_layer_size)
+        thetas.append(newTheta)
 
     return thetas
 
 
-# pretty sure it works
+# this works
 def nnparamsToThetas(nn_params,
                      input_layer_size,
                      hidden_layer_size, hidden_layer_count,
