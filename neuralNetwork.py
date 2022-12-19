@@ -27,6 +27,7 @@ def predict(thetas, X):
 
 
 def predictFromCamera(thetas, input_size):
+    print(input_size)
     cam = cv2.VideoCapture(0)
     while True:
         ret_val, img = cam.read()
@@ -54,14 +55,14 @@ def findGoodValues(input_layer_size, num_labels, XTrain, yTrain, XVal, yVal):
             for lambda_ in range(0, 6):
                 print(f'lambda: {lambda_}, layer count: {hidden_layer_count}, layer size: {hidden_layer_size}')
                 oldTheta = optimizeNN(maxiter, input_layer_size, hidden_layer_size, hidden_layer_count, num_labels,
-                                      XTrain, yTrain, lambda_, False, 0)
+                                      XTrain, yTrain, lambda_, [])
                 shapedTheta = nnparamsToThetas(oldTheta, input_layer_size, hidden_layer_size, hidden_layer_count,
                                                num_labels)
 
                 oldIterPred = np.mean(predict(shapedTheta, XVal) == yVal) * 100
                 while True:
                     newTheta = optimizeNN(maxiter, input_layer_size, hidden_layer_size, hidden_layer_count, num_labels,
-                                          XTrain, yTrain, lambda_, True, oldTheta)
+                                          XTrain, yTrain, lambda_, oldTheta)
                     shapedTheta = nnparamsToThetas(newTheta, input_layer_size, hidden_layer_size, hidden_layer_count,
                                                    num_labels)
 
@@ -146,7 +147,7 @@ def nnCostFunction(nn_params,
 # I think this works
 def optimizeNN(maxIter, input_layer_size, hidden_layer_size,
                hidden_layer_count,
-               num_labels, X, y, lambda_, useOtherThetas, initThetas):
+               num_labels, X, y, lambda_, initThetas):
     print(f"optimizing network")
     options = {'maxiter': maxIter}
 
@@ -156,7 +157,7 @@ def optimizeNN(maxIter, input_layer_size, hidden_layer_size,
                                             num_labels, X, y, lambda_)
 
     start_time = time.time()
-    if useOtherThetas:
+    if len(initThetas):
         initial_nn_params = initThetas
     else:
         initialThetas = randInitAllWeights(input_layer_size, hidden_layer_size, hidden_layer_count, num_labels)
